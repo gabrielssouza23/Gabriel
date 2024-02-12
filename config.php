@@ -11,6 +11,7 @@ if (!defined('DB_HOST')) {
 }
 
 if (!defined('DB_USER')) {
+  // define("DB_USER", 'auth-service');
   define("DB_USER", 'root');
 }
 

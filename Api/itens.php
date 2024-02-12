@@ -12,7 +12,7 @@ function listItens()
     $conn = new Connection();
 
     // Preparação e execução da consulta usando a classe Connection
-    $query = "SELECT *, i.name 'name', b.name 'brandName' FROM itens i JOIN brand b ON i.brand_id = b.id
+    $query = "WITH Quantidades AS ( SELECT i.id, i.name, SUM(CASE WHEN p.action = 'devolucao' THEN -p.amount ELSE p.amount END) AS qtdeComCliente, i.amount AS qtdeOriginalEstoque FROM pedidos p JOIN itens i ON p.item_id = i.id GROUP BY i.id, i.name, i.amount ) SELECT i.id, i.name, b.name AS brandName, i.place, i.deleted, i.amount totalAmount, q.qtdeOriginalEstoque - q.qtdeComCliente AS amount FROM itens i JOIN brand b ON i.brand_id = b.id JOIN Quantidades q ON i.id = q.id;
     ";
     $rows = $conn->query($query);
     // Exibição dos resultados
@@ -72,7 +72,7 @@ function editItem($item)
 {
   $conn = new Connection();
 
-  $query = "Update itens set name = '" . $item["inputNome"] . "', amount = '" . $item["inputQuantidade"] . "', place = '" . $item["inputPrateleira"]  . "', brand_id = '". $item["brand_id"] ."' where id = '" . $item["id"] . "';";
+  $query = "Update itens set name = '" . $item["inputNome"] . "', amount = '" . $item["inputQuantidade"] . "', place = '" . $item["inputPrateleira"]  . "', brand_id = '" . $item["brand_id"] . "' where id = '" . $item["id"] . "';";
 
   return $conn->query($query);
 }
@@ -85,6 +85,8 @@ function addItem($item)
 
   return $conn->query($query);
 }
+
+
 
 switch ($action) {
   case "get-item":

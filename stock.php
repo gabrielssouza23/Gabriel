@@ -210,8 +210,8 @@
 
 
 <button id="btnSair">Sair</button>
-
-<script>
+<script type="module">
+  import serializeFormData from "./scripts/utils/serializeFormData.js"
   const tableBrands = document.querySelector("table");
   // Seletor para a modal
   const modal = document.querySelector("#edit-modal");
@@ -356,7 +356,7 @@
   editForm.addEventListener('submit', (e) => {
     e.preventDefault();
     document.getElementById('brand_id').value = selectBrandModal.value;
-    
+
     const seliarizedForm = serializeFormData(editForm);
     console.log(seliarizedForm);
     const url = "./Api/itens.php?action=edit-item";
@@ -367,25 +367,7 @@
       method: "post",
       body: JSON.stringify(seliarizedForm)
     }
-    fetch(url,options).then(response => response.json()).then(json => console.log(json));
+    fetch(url, options).then(response => response.json()).then(json => console.log(json));
 
   });
-
-
-  function serializeFormData(form) {
-    var formData = new FormData(form);
-    var serializedData = {};
-    for (var [name, value] of formData) {
-      if (serializedData[name]) {
-        if (!Array.isArray(serializedData[name])) {
-          serializedData[name] = [serializedData[name]];
-        }
-        serializedData[name].push(value);
-      } else {
-        serializedData[name] = value;
-      }
-    }
-
-    return serializedData;
-  }
 </script>
