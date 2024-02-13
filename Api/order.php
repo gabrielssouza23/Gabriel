@@ -18,7 +18,7 @@ function getOrders()
     c.email 'clientEmail',
     i.name 'itemName',
     p.action 'action',
-    p.timeP 'timeP'
+    p.date 'timeP'
     FROM pedidos p
     JOIN clients c ON p.client_id = c.id
     JOIN itens i ON p.item_id = i.id
@@ -32,23 +32,6 @@ function getOrders()
   }
 }
 
-// function postOrder($order)
-// {
-//   try {
-//     // Criação da instância da classe Connection
-//     $conn = new Connection();
-//     $query = "SELECT * FROM pedidos WHERE client_id = '" . $order["selectClient"] . "' AND item_id = '" . $order['selectItem'] . "' AND action = '" . $order['selectAction'] . "';";
-//     // Preparação e execução da consulta usando a classe Connection
-//     $query = "INSERT INTO pedidos (client_id, item_id, amount, action)
-//     VALUES ('" . $order["selectClient"] . "', '" . $order['selectItem'] . "', '" . $order['amountOrder'] . "', '" . $order['selectAction'] . "');";
-//     $conn->query($query);
-
-//     return true;
-//   } catch (Exception $e) {
-//     echo "Erro: " . $e->getMessage();
-//     return false;
-//   }
-// }
 
 function postOrder($order)
 {

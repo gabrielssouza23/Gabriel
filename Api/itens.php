@@ -12,7 +12,32 @@ function listItens()
     $conn = new Connection();
 
     // Preparação e execução da consulta usando a classe Connection
-    $query = "WITH Quantidades AS ( SELECT i.id, i.name, SUM(CASE WHEN p.action = 'devolucao' THEN -p.amount ELSE p.amount END) AS qtdeComCliente, i.amount AS qtdeOriginalEstoque FROM pedidos p JOIN itens i ON p.item_id = i.id GROUP BY i.id, i.name, i.amount ) SELECT i.id, i.name, b.name AS brandName, i.place, i.deleted, i.amount totalAmount, q.qtdeOriginalEstoque - q.qtdeComCliente AS amount FROM itens i JOIN brand b ON i.brand_id = b.id JOIN Quantidades q ON i.id = q.id;
+    $query = "WITH Quantidades AS (
+      SELECT
+          i.id,
+          i.name,
+          SUM(CASE WHEN p.action = 'devolucao' THEN -p.amount ELSE p.amount END) AS qtdeComCliente,
+          i.amount AS qtdeOriginalEstoque
+      FROM
+          pedidos p
+          JOIN itens i ON p.item_id = i.id
+      GROUP BY
+          i.id, i.name, i.amount
+  )
+  
+  SELECT
+      i.id,
+      i.name,
+      b.name AS brandName,
+      i.place,
+      i.deleted,
+      i.amount AS totalAmount,
+      COALESCE(q.qtdeOriginalEstoque - q.qtdeComCliente, i.amount) AS amount
+  FROM
+      itens i
+      JOIN brand b ON i.brand_id = b.id
+      LEFT JOIN Quantidades q ON i.id = q.id;
+  ;
     ";
     $rows = $conn->query($query);
     // Exibição dos resultados
@@ -81,12 +106,30 @@ function addItem($item)
 {
   $conn = new Connection();
 
-  $query = "INSERT INTO itens (name, amount, place, brand_id) VALUES ('" . $item["inputNome"] . "', '" . $item["inputQuantidade"] . "', '" . $item["inputPrateleira"] . "', '" . $item["brand_id"] . "');";
+  $query = "INSERT INTO itens (name, amount, place, brand_id) VALUES ('" . $item["addNome"] . "', '" . $item["addQuantidade"] . "', '" . $item["addPrateleira"] . "', '" . $item["addBrand"] . "');";
+
+  return $conn->query($query);
+}
+
+function getHistorico($itemId)
+{
+  $conn = new Connection();
+
+  $query = "SELECT p.id, c.id idClient, c.name clienteName, p.action, p.amount, p.date FROM pedidos p JOIN clients c ON p.client_id = c.id JOIN itens i ON p.item_id = i.id WHERE i.id = '$itemId'";
 
   return $conn->query($query);
 }
 
 
+function deleteItem($id)
+{
+  $conn = new Connection();
+
+  $query = "UPDATE itens SET deleted = 1 WHERE id = '$id'";
+
+
+  return $conn->query($query);
+}
 
 switch ($action) {
   case "get-item":
@@ -110,6 +153,14 @@ switch ($action) {
     break;
   case "add-item":
     $resp = addItem($_POST);
+    echo json_encode($resp);
+    break;
+  case "get-historico":
+    $resp = getHistorico($_GET['idMovimentacao']);
+    echo json_encode($resp);
+    break;
+  case "delete-item":
+    $resp = deleteItem($_GET['id']);
     echo json_encode($resp);
     break;
   default:

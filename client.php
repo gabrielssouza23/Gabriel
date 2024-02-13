@@ -125,6 +125,35 @@
       justify-content: center;
 
     }
+
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      border: 1px solid #888;
+      width: 400px;
+    }
+
+    #botaoEnviarCliente {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
   </style>
   <link rel="stylesheet" href="./styles/nav.css" />
 </head>
@@ -139,12 +168,11 @@
   </ul>
 </nav>
 <body>
-  <!-- <h2>Order Management</h2> -->
+  <h2 id="title-cliente"></h2>
   <table>
     <thead>
       <tr>
         <th>ID</th>
-        <th>Cliente</th>
         <th>Item</th>
         <th>Quantidade</th>
         <th>Ação</th>
@@ -155,33 +183,20 @@
     </tbody>
   </table>
 
-  <section>
-    <form action="">
-      <label for="selectClient">Cliente:</label>
-      <select name="selectClient">
-        <option disabled selected value="0">Selecione</option>
+  <div id="cliente-nao-encontrado" class="modal">
+    <div class="modal-content">
+      <!-- <span class="close" name="closeModalClienteindefinido">&times;</span> -->
+      <h2>Selecione um cliente</h2>
+
+      <select name="clientesSelect" id="clientesSelect">
+        <option value="0" disable selected>Selecione</option>
       </select>
 
-      <label for="selectItem">Item:</label>
-      <select name="selectItem">
-        <option disabled selected value="0">Selecione</option>
-      </select>
+      <button id="botaoEnviarCliente">Enviar</button>
 
-      <label for="amountOrder">Quantidade:</label>
-      <input type="text" name="amountOrder" />
+    </div>
+  </div>
 
-      <label for="selectAction">Ação:</label>
-      <select name="selectAction">
-        <option value="0" disabled selected>Selecione</option>
-        <option value="devolucao">Devolução</option>
-        <option value="retirada">Retirada</option>
-      </select>
-
-      <input type="submit" value="Enviar">
-
-      <div id="response"></div>
-    </form>
-  </section>
 
   <script type="module">
     import serializeFormData from "./scripts/utils/serializeFormData.js"
@@ -189,81 +204,58 @@
       useFetch
     } from "./scripts/utils/useFetch.js";
     import listSelect from "./scripts/utils/listSelect.js";
+    import openModal from "./scripts/utils/openModal.js";
 
-    const form = document.querySelector('form')
+
+    const urlParam = new URLSearchParams(window.location.search).get("cliente-id");
+    console.log("🚀 ~ urlParam:", urlParam)
+
+    const tbody = document.querySelector('tbody');
     document.addEventListener('DOMContentLoaded', async (e) => {
-      const request = await fetch("Api/itens.php?action=get-itens");
+      openModal("cliente-nao-encontrado", false);
 
-      const json = await request.json();
-      console.log(json);
+      if (!urlParam) {
 
-      const getOrders = await fetch("Api/order.php?action=get-orders");
+        openModal("cliente-nao-encontrado", true);
 
-      const orders = await getOrders.json();
 
-      const tbody = document.querySelector("tbody");
+        const requestClientes = await useFetch("Api/clients.php?action=get-clients")
+        console.log("🚀 ~ document.addEventListener ~ requestClientes:", requestClientes)
+
+        listSelect('select[name="clientesSelect"]', requestClientes);
+
+        const botaoEnviarClientes = document.getElementById('botaoEnviarCliente');
+        botaoEnviarClientes.addEventListener('click', (e) => {
+
+          const select = document.querySelector('select[name="clientesSelect"]');
+
+          location.href = "client.php?cliente-id=" + select.value;
+        });
+        return
+      }
+      const movimentacoes = await useFetch("Api/clients.php?action=get-movimentacao&client-id=" + urlParam);
+      console.log("🚀 ~ document.addEventListener ~ movimentacoes:", movimentacoes)
 
       tbody.innerHTML = "";
-      orders.forEach((order) => {
+      movimentacoes.forEach((movimentacao) => {
         const tr = document.createElement("tr");
-        tr.setAttribute("data-id", order.id);
-        console.log(order);
-        tr.innerHTML =
-          `<td>${order.id}</td>
-          <td>${order.clientName}</td>
-          <td>${order.itemName}</td>
-          <td>${order.pedidosAmount}</td>
-          <td>${order.action}</td>
-          <td>${new Date(order.timeP).toLocaleString()}</td>`;
+        tr.setAttribute("data-id", movimentacao.id);
+        tr.innerHTML = `
+      <td>${movimentacao.id}</td>
+      <td>${movimentacao.itemName}</td>
+        <td>${movimentacao.amount}</td>
+        <td>${movimentacao.action}</td>
+        <td>${new Date(movimentacao.date).toLocaleString()}</td>       
+        `
+
         tbody.appendChild(tr);
       });
 
-      console.table(orders);
+      const titleCliente = document.getElementById('title-cliente');
 
-      listSelect('select[name="selectItem"]', json)
+      titleCliente.innerText = "Movimentações de " + movimentacoes[0].clienteName;
 
-
-      const requestClients = await fetch("Api/clients.php?action=get-clients")
-
-      const clients = await requestClients.json();
-
-
-      listSelect('select[name="selectClient"]', clients);
-
-    });
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-
-
-      const orderSerialize = serializeFormData(form);
-      const request = await fetch("./Api/order.php?action=post-order", {
-        headers: {
-          "Content-Type": "application/json"
-        },
-        method: "POST",
-        body: JSON.stringify(orderSerialize)
-      })
-
-      const response = await request.json();
-
-      const responseData = document.getElementById("response");
-
-      // if (response ) {
-      //   responseData.innerHTML = "Enviado com sucesso";
-      //   responseData.setAttribute.style.color = "green";
-      // } else {
-      //   responseData.innerHTML = "Erro ao enviar";
-      //   responseData.setAttribute.style.color = "red";
-      // }
-
-      const url = "./Api/order.php?action=send-order"
-      const sendOrder = await useFetch(url, {
-        method: "POST"
-      });
-
-      console.log(sendOrder);
+      console.log("🚀 ~ document.addEventListener ~ movimentacoes[0].clienteName:", movimentacoes[0].clienteName)
 
     });
   </script>
